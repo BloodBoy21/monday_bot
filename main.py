@@ -48,6 +48,27 @@ async def allIssues(ctx, *args):
     await ctx.send(embed=embed_issues(data, user))
 
 
+@bot.command(name="updateIssue", help="Update an issue")
+async def updateIssue(ctx, *args):
+    id = args[0]
+    value = args[1:]
+    value = " ".join(value).lower().strip()
+    status = {
+        "working on it": 0,
+        "done": 1,
+        "stuck": 2,
+    }[value]
+    res = monday.update_issue(id, status)
+    await ctx.send(res)
+
+
+@bot.command(name="setBoard", help="Set the board id")
+async def setBoard(ctx, *args):
+    server_id = ctx.message.guild.id
+    board_id = args[0]
+    monday.set_board_id(server_id, board_id)
+
+
 # @bot.event
 # async def on_message(message):
 #     if message.author == bot.user:
