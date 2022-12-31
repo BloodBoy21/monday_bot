@@ -28,7 +28,7 @@ def embed_issues(issues, user=None):
     for issue in issues:
         embed.add_field(
             name=issue.title,
-            value=f"Client: {issue.client}\nAssigned to: {issue.assigned_to}\nStatus: {issue.status}\nType: {issue.type}\nDate: {issue.date}\nGroup: {issue.group}",
+            value=f"Client: {issue.client}\nAssigned to: {issue.assigned_to}\nStatus: {issue.status}\nType: {issue.type}\nDate: {issue.date}\nGroup: {issue.group}\nId: {issue.id}",
             inline=False,
         )
     return embed
