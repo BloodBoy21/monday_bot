@@ -110,4 +110,28 @@ async def groups(ctx):
     return await ctx.send(embed=embed)
 
 
+@bot.command(
+    name="lsBoard",
+    help="!lsBoard <board>",
+)
+async def lsBoard(ctx, *args):
+    monday = await check_server(ctx)
+    if not monday:
+        return
+    board = args[0]
+    name, groups = monday.get_board_groups(board)
+    if not groups:
+        return await ctx.send("No groups found")
+    embed = discord.Embed(
+        title=f"{name} groups", description=f"All groups in {name}", color=0x266DD3
+    )
+    for group in groups:
+        embed.add_field(
+            name=f"{group['title']}",
+            value=f"Id: {group['id']}",
+            inline=False,
+        )
+    return await ctx.send(embed=embed)
+
+
 bot.run(TOKEN)

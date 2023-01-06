@@ -164,3 +164,18 @@ class Monday:
                     continue
                 issues += [issue]
         return issues
+
+    def get_board_groups(self, board):
+        query = """{boards(ids: %s) {groups{ id title} name}}""" % board
+        r = requests.post(
+            self.base_url,
+            json={"query": query},
+            headers={"Authorization": self.api_key},
+        )
+        data = r.json()
+        try:
+            board_name = data["data"]["boards"][0]["name"]
+            groups = data["data"]["boards"][0]["groups"]
+            return board_name, groups
+        except KeyError:
+            return None, None
