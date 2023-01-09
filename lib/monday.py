@@ -165,6 +165,7 @@ class Monday:
                 issues += [issue]
         return issues
 
+    @staticmethod
     def get_board_groups(self, board):
         query = """{boards(ids: %s) {groups{ id title} name}}""" % board
         r = requests.post(

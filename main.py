@@ -3,6 +3,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import os
 from lib.helpers import check_server, add_group, remove_group, get_groups
+from lib.monday import Monday
 
 load_dotenv()
 
@@ -115,11 +116,8 @@ async def groups(ctx):
     help="!lsBoard <board>",
 )
 async def lsBoard(ctx, *args):
-    monday = await check_server(ctx)
-    if not monday:
-        return
     board = args[0]
-    name, groups = monday.get_board_groups(board)
+    name, groups = Monday.get_board_groups(board)
     if not groups:
         return await ctx.send("No groups found")
     embed = discord.Embed(
