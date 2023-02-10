@@ -33,10 +33,11 @@ def get_server(server_id):
     return groups
 
 
-def _groupExists(group_id, board):
+def _groupExists(server, group_id, board):
     data, _ = (
         supabase.table("servers")
         .select("*")
+        .eq("server_id", server)
         .eq("group_id", group_id)
         .eq("board_id", board)
         .execute()
@@ -46,7 +47,7 @@ def _groupExists(group_id, board):
 
 
 def add_group(server, board, group, name=None):
-    if _groupExists(group, board):
+    if _groupExists(server, group, board):
         return
     data, _ = (
         supabase.table("servers")
@@ -59,7 +60,7 @@ def add_group(server, board, group, name=None):
 
 
 def remove_group(server, board, group):
-    if not _groupExists(group, board):
+    if not _groupExists(server, group, board):
         return
     data, _ = (
         supabase.table("servers")

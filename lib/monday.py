@@ -15,33 +15,35 @@ def _search_issue(issue_id):
     return data[0]
 
 
+def _create_columns(columns):
+    columns = {}
+    for column in columns:
+        title = column["title"].lower().strip()
+        columns[title] = column["text"]
+    return columns
+
+
 class Issue:
-    def __init__(
-        self,
-        title: str,
-        client: str,
-        users: str,
-        status: str,
-        type: str,
-        date: datetime,
-        group: str = None,
-        id: str = None,
-        board_id: str = None,
-    ):
-        self.title = title
-        self.client = client
-        self.assigned_to = users or "Sin asignar"
-        self.status = status
-        self.type = type
-        self.date = date or datetime.now()
-        self.group = group
-        self.id = id
-        self.board_id = board_id
+    def __init__(self, data, title=None):
+        self.title = title or data["title"]
+        self.client = data["client"]
+        self.assigned_to = data["asignado a"]
+        self.status = data["estado"]
+        self.type = data["tipo"]
+        self.date = data["creation log"]
+        self.group = data["group"] or "Sin grupo"
+        self.platform = data["plataforma"] or "Sin plataforma"
+        self.resolution = data["fecha de resolución"] or "Sin resolución"
+        self.id = data["id"]
+        self.board_id = data["board"]
         self.__save_in_db()
         self.url = f"https://{MONDAY_HOST}/boards/{self.board_id}/pulses/{self.id}"
 
     def __repr__(self) -> str:
         return f"\nIssue(\ntitle = {self.title}\nid={self.id}\nclient = {self.client}\nusers = {self.assigned_to}\nstatus = {self.status}\ntype = {self.type}\ndate = {self.date}\ngroup = {self.group})\n"
+
+    def __str__(self) -> str:
+        return f"**ID**: {self.id}\n**Client**: {self.client}\n**Assigned to**: {self.assigned_to}\n**Status**: {self.status}\n**Type**: {self.type}\n**Date**: {self.date}\n**Group**: {self.group}\n**Platform**: {self.platform}\n**Resolution**: {self.resolution}\n\n**URL**: {self.url}"
 
     def __save_in_db(self):
         exists = _search_issue(self.id)
@@ -138,19 +140,16 @@ class Monday:
         for issue_group in groups:
             self.groups[issue_group["title"]] = []
             for item in issue_group["items"]:
+                data = _create_columns(item["column_values"])
                 title = item["name"]
-                client = item["column_values"][1]["text"]
-                users = item["column_values"][2]["text"]
-                status = item["column_values"][3]["text"]
-                type = item["column_values"][4]["text"]
-                date = item["column_values"][5]["text"]
+                status = data["status"]
                 group = issue_group["title"]
                 if status.lower() in is_done:
                     continue
-                id = item["id"]
-                issue = Issue(
-                    title, client, users, status, type, date, group, id, board_id
-                )
+                data["id"] = item["id"]
+                data["board"] = board_id
+                data["group"] = group
+                issue = Issue(title, data=data)
                 self.groups[group] += [issue]
         return [issue for group in self.groups.values() for issue in group]
 
