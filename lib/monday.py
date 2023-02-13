@@ -29,7 +29,7 @@ def _create_columns(columns_values):
 class Issue:
     def __init__(self, data, title=None):
         self.title = title or data.get("name", "Sin título")
-        self.client = data.get("cliente", "Sin cliente")
+        self.client = data.get("client", "Sin cliente")
         self.assigned_to = data.get("asignado a", "Sin asignar")
         self.status = data.get("estado", "Sin estado")
         self.type = data.get("tipo", "Sin tipo")
@@ -101,7 +101,8 @@ class Monday:
         )
         data = r.json()
         groups = data["data"]["boards"][0]["groups"]
-        return self.__create_issues(groups, board_id)
+        board_name = data["data"]["boards"][0]["name"]
+        return self.__create_issues(groups, board_id, board_name)
 
     def get_all_issues(self):
         issues = []
@@ -131,7 +132,7 @@ class Monday:
         return "Issue updated successfully" if not errors else "Error updating issue"
 
     # TODO: Add custom method to get fields
-    def __create_issues(self, groups, board_id=None):
+    def __create_issues(self, groups, board_id=None, board_name=None):
         is_done = [
             "done",
             "terminado",
@@ -153,6 +154,7 @@ class Monday:
                 data["id"] = item["id"]
                 data["board"] = board_id
                 data["group"] = group
+                data["client"] = board_name
                 issue = Issue(title=title, data=data)
                 self.groups[group] += [issue]
         return [issue for group in self.groups.values() for issue in group]
