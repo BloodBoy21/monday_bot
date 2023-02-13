@@ -5,23 +5,16 @@ import os
 
 load_dotenv()
 MONDAY_TOKEN = os.getenv("MONDAY_TOKEN")
-SERVERS_CACHE = {}
 
 
 async def check_server(ctx):
     server_id = ctx.message.guild.id
-    if not is_in_cache(server_id):
-        server = get_server(server_id)
-        if not server:
-            await ctx.send("Server not found")
-            return None
-    server = SERVERS_CACHE[server_id]
+    server = get_server(server_id)
+    if not server:
+        await ctx.send("Server not found")
+        return None
     new_monday = monday.Monday(MONDAY_TOKEN, server)
     return new_monday
-
-
-def is_in_cache(server_id):
-    return server_id in SERVERS_CACHE
 
 
 def get_server(server_id):
@@ -29,7 +22,6 @@ def get_server(server_id):
     groups = data[1]
     if len(groups) == 0:
         return None
-    SERVERS_CACHE[server_id] = groups
     return groups
 
 
