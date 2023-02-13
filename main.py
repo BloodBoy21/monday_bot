@@ -116,8 +116,11 @@ async def groups(ctx):
     help="!lsBoard <board>",
 )
 async def lsBoard(ctx, *args):
+    monday = await check_server(ctx)
+    if not monday:
+        return
     board = args[0]
-    name, groups = Monday.get_board_groups(board)
+    name, groups = monday.get_board_groups(board=board)
     if not groups:
         return await ctx.send("No groups found")
     embed = discord.Embed(
