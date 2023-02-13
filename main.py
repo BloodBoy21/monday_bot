@@ -15,20 +15,33 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 
+def split_list(my_list, sublist_size=20):
+    return [my_list[i : i + sublist_size] for i in range(0, len(my_list), sublist_size)]
+
+
+def issue_list_embed(description):
+    return discord.Embed(title="Issues", description=description, color=0x266DD3)
+
+
 def embed_issues(issues, user=None):
     description = (
         "All issues from the team" if not user else f"All issues assigned to {user}"
     )
-    embed = discord.Embed(title="Issues", description=description, color=0x266DD3)
+    embed = issue_list_embed(description)
     if not issues:
         embed.add_field(name="No issues found :)", value="Good job!", inline=False)
-    for issue in issues:
-        embed.add_field(
-            name=issue.title,
-            value=issue.__str__(),
-            inline=False,
-        )
-    return embed
+    embed_issues = split_list(issues, 10)
+    embed_list = list()
+    for issue_list in embed_issues:
+        for issue in issue_list:
+            embed.add_field(
+                name=issue.title,
+                value=issue.__str__(),
+                inline=False,
+            )
+        embed_list.append(embed)
+        embed = issue_list_embed(description)
+    return embed_list
 
 
 @bot.command(name="ping", help="Responds with pong")
@@ -46,7 +59,9 @@ async def allIssues(ctx, *args):
         return
     user = args[0] if args else None
     data = monday.get_by_user(user) if user else monday.get_all_issues()
-    await ctx.send(embed=embed_issues(data, user))
+    embed_issues_list = embed_issues(data, user)
+    for embed in embed_issues_list:
+        await ctx.send(embed=embed)
 
 
 @bot.command(name="updateIssue", help="!updateIssue <id> <status>")
