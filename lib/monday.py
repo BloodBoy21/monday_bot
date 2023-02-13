@@ -12,12 +12,15 @@ MONDAY_HOST = os.getenv("MONDAY_HOST")
 def _search_issue(issue_id):
     res, _ = supabase.table("issues").select("*").eq("issue_id", issue_id).execute()
     data = res[1]
-    return data[0]
+    try:
+        return data[0]
+    except IndexError:
+        return None
 
 
-def _create_columns(columns):
+def _create_columns(columns_values):
     columns = {}
-    for column in columns:
+    for column in columns_values:
         title = column["title"].lower().strip()
         columns[title] = column["text"]
     return columns
@@ -25,16 +28,16 @@ def _create_columns(columns):
 
 class Issue:
     def __init__(self, data, title=None):
-        self.title = title or data["title"]
-        self.client = data["client"]
-        self.assigned_to = data["asignado a"]
-        self.status = data["estado"]
-        self.type = data["tipo"]
-        self.date = data["creation log"]
-        self.group = data["group"] or "Sin grupo"
-        self.platform = data["plataforma"] or "Sin plataforma"
-        self.resolution = data["fecha de resolución"] or "Sin resolución"
-        self.id = data["id"]
+        self.title = title or data.get("name", "Sin título")
+        self.client = data.get("cliente", "Sin cliente")
+        self.assigned_to = data.get("asignado a", "Sin asignar")
+        self.status = data.get("estado", "Sin estado")
+        self.type = data.get("tipo", "Sin tipo")
+        self.date = data.get("creation log", "Sin fecha")
+        self.group = data.get("group", "Sin grupo")
+        self.platform = data.get("plataforma", "Sin plataforma")
+        self.resolution = data.get("fecha de resolución", "Sin resolver")
+        self.id = data.get("id", "Sin id")
         self.board_id = data["board"]
         self.__save_in_db()
         self.url = f"https://{MONDAY_HOST}/boards/{self.board_id}/pulses/{self.id}"
@@ -140,16 +143,17 @@ class Monday:
         for issue_group in groups:
             self.groups[issue_group["title"]] = []
             for item in issue_group["items"]:
-                data = _create_columns(item["column_values"])
+                column_values = item["column_values"]
+                data = _create_columns(column_values)
                 title = item["name"]
-                status = data["status"]
+                status = data["estado"]
                 group = issue_group["title"]
                 if status.lower() in is_done:
                     continue
                 data["id"] = item["id"]
                 data["board"] = board_id
                 data["group"] = group
-                issue = Issue(title, data=data)
+                issue = Issue(title=title, data=data)
                 self.groups[group] += [issue]
         return [issue for group in self.groups.values() for issue in group]
 
@@ -164,7 +168,6 @@ class Monday:
                 issues += [issue]
         return issues
 
-    @staticmethod
     def get_board_groups(self, board):
         query = """{boards(ids: %s) {groups{ id title} name}}""" % board
         r = requests.post(
