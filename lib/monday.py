@@ -100,8 +100,12 @@ class Monday:
             headers={"Authorization": self.api_key},
         )
         data = r.json()
-        groups = data["data"]["boards"][0]["groups"]
-        board_name = data["data"]["boards"][0]["name"]
+        try:
+            groups = data["data"]["boards"][0]["groups"]
+            board_name = data["data"]["boards"][0]["name"]
+        except Exception as e:
+            print(e)
+            return []
         return self.__create_issues(groups, board_id, board_name)
 
     def get_all_issues(self):
