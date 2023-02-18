@@ -1,4 +1,5 @@
-discord.py==2.1.0
+discord.py==1.7.3
 python-dotenv==0.21.0
 requests==2.28.1
 supabase==0.6.0
+disputils==0.2.0

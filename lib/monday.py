@@ -46,7 +46,7 @@ class Issue:
         return f"\nIssue(\ntitle = {self.title}\nid={self.id}\nclient = {self.client}\nusers = {self.assigned_to}\nstatus = {self.status}\ntype = {self.type}\ndate = {self.date}\ngroup = {self.group})\n"
 
     def __str__(self) -> str:
-        return f"**ID**: {self.id}\n**Client**: {self.client}\n**Assigned to**: {self.assigned_to}\n**Status**: {self.status}\n**Type**: {self.type}\n**Date**: {self.date}\n**Group**: {self.group}\n**Platform**: {self.platform}\n**Resolution**: {self.resolution}\n\n**URL**: {self.url}"
+        return f"**ID**: {self.id}\n**Client**: {self.client}\n**Assigned to**: {self.assigned_to}\n**Status**: {self.status}\n**Type**: {self.type}\n**Date**: {self.date}\n**Group**: {self.group}\n**Platform**: {self.platform}\n**Resolution**: {self.resolution}\n**URL**: {self.url}"
 
     def __save_in_db(self):
         exists = _search_issue(self.id)
@@ -72,7 +72,7 @@ class Monday:
         self.groups = {}
         self.server = server
 
-    def __get_all_issues(self, board_id, group_id):
+    async def __get_all_issues(self, board_id, group_id):
         query = """
         {
           boards(ids: %s) {
@@ -108,10 +108,10 @@ class Monday:
             return []
         return self.__create_issues(groups, board_id, board_name)
 
-    def get_all_issues(self):
+    async def get_all_issues(self):
         issues = []
         for board in self.server:
-            issues += self.__get_all_issues(board["board_id"], board["group_id"])
+            issues += await self.__get_all_issues(board["board_id"], board["group_id"])
         return issues
 
     def update_issue(self, issue_id, status):
@@ -163,8 +163,8 @@ class Monday:
                 self.groups[group] += [issue]
         return [issue for group in self.groups.values() for issue in group]
 
-    def get_by_user(self, user):
-        self.get_all_issues()
+    async def get_by_user(self, user):
+        await self.get_all_issues()
         issues = []
         for group in self.groups.values():
             for issue in group:

@@ -3,14 +3,13 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import os
 from lib.helpers import check_server, add_group, remove_group, get_groups
-from lib.monday import Monday
+from disputils import BotEmbedPaginator
 
 load_dotenv()
 
-
-intents = discord.Intents.default()
-intents.message_content = True
-intents.typing = True
+intents = discord.Intents(
+    messages=True, guilds=True, reactions=True, members=True, presences=True
+)
 bot = commands.Bot(command_prefix="!", intents=intents)
 TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -30,12 +29,15 @@ def embed_issues(issues, user=None):
     embed = issue_list_embed(description)
     if not issues:
         embed.add_field(name="No issues found :)", value="Good job!", inline=False)
+        return [embed]
     embed_issues = split_list(issues, 10)
     embed_list = list()
+    issue_count = 0
     for issue_list in embed_issues:
         for issue in issue_list:
+            issue_count += 1
             embed.add_field(
-                name=issue.title,
+                name=f"{issue_count}. {issue.title}",
                 value=issue.__str__(),
                 inline=False,
             )
@@ -56,12 +58,13 @@ async def ping(ctx):
 async def allIssues(ctx, *args):
     monday = await check_server(ctx)
     if not monday:
-        return
+        return ctx.send("No monday board found. Please add one with !addBoard <board>")
     user = args[0] if args else None
-    data = monday.get_by_user(user) if user else monday.get_all_issues()
-    embed_issues_list = embed_issues(data, user)
-    for embed in embed_issues_list:
-        await ctx.send(embed=embed)
+    async with ctx.typing():
+        data = await (monday.get_by_user(user) if user else monday.get_all_issues())
+        embed_issues_list = embed_issues(data, user)
+    paginator = BotEmbedPaginator(ctx, embed_issues_list)
+    await paginator.run()
 
 
 @bot.command(name="updateIssue", help="!updateIssue <id> <status>")
