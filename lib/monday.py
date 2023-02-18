@@ -1,5 +1,4 @@
 import requests
-from datetime import datetime
 import os
 from dotenv import load_dotenv
 from lib.supabase import supabase
@@ -188,3 +187,22 @@ class Monday:
             return board_name, groups
         except KeyError:
             return None, None
+
+    def __find_group(self, group_name):
+        groups = self.server
+        for group in groups:
+            if group["name"].lower() == group_name.lower():
+                return group
+        return None
+
+    async def get_group_issues(self, group_name, user):
+        group = self.__find_group(group_name)
+        if not group:
+            return []
+        issues = await self.__get_all_issues(group["board_id"], group["group_id"])
+        if not user:
+            return issues
+        issues = [
+            issue for issue in issues if user.lower() in issue.assigned_to.lower()
+        ]
+        return issues

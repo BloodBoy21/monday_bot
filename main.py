@@ -89,12 +89,20 @@ async def updateIssue(ctx, *args):
     help="!addGroup <board> <group> <name>",
 )
 async def addGroup(ctx, *args):
-    board, group, name = args[0], args[1], args[2]
-    server_id = ctx.message.guild.id
-    res = add_group(server_id, board, group, name)
-    if not res:
-        return await ctx.send("Group already exists")
-    return await ctx.send("Group added")
+    try:
+        board, group, name = args[0], args[1], " ".join(args[2:])
+        if not name:
+            raise Exception("No name provided")
+        if not board or not group:
+            raise Exception("Board or group not provided")
+        server_id = ctx.message.guild.id
+        res = add_group(server_id, board, group, name)
+        if not res:
+            return await ctx.send("Group already exists")
+        return await ctx.send("Group added")
+    except Exception as e:
+        print(e)
+        return await ctx.send(f"Error adding group: {str(e)}")
 
 
 @bot.command(
@@ -151,6 +159,23 @@ async def lsBoard(ctx, *args):
             inline=False,
         )
     return await ctx.send(embed=embed)
+
+
+@bot.command(
+    name="group",
+    help="!group <name> <user> (optional)",
+)
+async def group(ctx, *args):
+    monday = await check_server(ctx)
+    if not monday:
+        return
+    group = args[0]
+    user = " ".join(args[1:]) if len(args) > 1 else None
+    async with ctx.typing():
+        data = await monday.get_group_issues(group, user)
+        embed_issues_list = embed_issues(data)
+    paginator = BotEmbedPaginator(ctx, embed_issues_list)
+    await paginator.run()
 
 
 bot.run(TOKEN)
