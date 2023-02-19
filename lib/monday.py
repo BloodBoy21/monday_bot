@@ -1,7 +1,9 @@
+import json
 import requests
 import os
 from dotenv import load_dotenv
 from lib.supabase import supabase
+import lib.helpers as helpers
 
 load_dotenv()
 TOKEN = os.getenv("MONDAY_TOKEN")
@@ -38,6 +40,7 @@ class Issue:
         self.resolution = data.get("fecha de resolución", "Sin resolver")
         self.id = data.get("id", "Sin id")
         self.board_id = data["board"]
+        self.group_id = data["group_id"]
         self.__save_in_db()
         self.url = f"https://{MONDAY_HOST}/boards/{self.board_id}/pulses/{self.id}"
 
@@ -60,6 +63,7 @@ class Issue:
                 "status": self.status,
                 "group": self.group,
                 "board": self.board_id,
+                "group_id": self.group_id,
             },
         ).execute()
 
@@ -77,6 +81,7 @@ class Monday:
           boards(ids: %s) {
           groups (ids: %s) {
             title 
+            id
             items { 
               name
               id 
@@ -132,7 +137,7 @@ class Monday:
             print(errors)
         except KeyError:
             errors = None
-        return "Issue updated successfully" if not errors else "Error updating issue"
+        return "Issue updated successfully" if not errors else None
 
     # TODO: Add custom method to get fields
     def __create_issues(self, groups, board_id=None, board_name=None):
@@ -158,6 +163,7 @@ class Monday:
                 data["board"] = board_id
                 data["group"] = group
                 data["client"] = board_name
+                data["group_id"] = issue_group["id"]
                 issue = Issue(title=title, data=data)
                 self.groups[group] += [issue]
         return [issue for group in self.groups.values() for issue in group]
@@ -206,3 +212,26 @@ class Monday:
             issue for issue in issues if user.lower() in issue.assigned_to.lower()
         ]
         return issues
+
+    async def get_board_status(self, issue_id):
+        issue = await helpers.get_issue(issue_id)
+        if not issue:
+            return None
+        status_list = await helpers.board_status(issue["board"])
+        if status_list:
+            return status_list
+        query = (
+            """{ boards (ids: %s) { columns { title settings_str } } }"""
+            % issue["board"]
+        )
+        r = requests.post(
+            self.base_url,
+            json={"query": query},
+            headers={"Authorization": self.api_key},
+        )
+        data = r.json()
+        items = data["data"]["boards"][0]["columns"]
+        status = [item for item in items if item["title"] == "Estado"][0]
+        status_list = json.loads(status["settings_str"])["labels"]
+        helpers.set_board_status(issue["board"], status_list)
+        return status_list

@@ -3,7 +3,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import os
 from lib.helpers import check_server, add_group, remove_group, get_groups
-from disputils import BotEmbedPaginator
+from disputils import BotEmbedPaginator, BotMultipleChoice
 
 load_dotenv()
 
@@ -67,21 +67,23 @@ async def allIssues(ctx, *args):
     await paginator.run()
 
 
-@bot.command(name="updateIssue", help="!updateIssue <id> <status>")
+@bot.command(name="updateIssue", help="!updateIssue <id>")
 async def updateIssue(ctx, *args):
     monday = await check_server(ctx)
     if not monday:
         return
     id = args[0]
-    value = args[1:]
-    value = " ".join(value).lower().strip()
-    status = {
-        "working on it": 0,
-        "done": 1,
-        "stuck": 2,
-    }[value]
-    res = monday.update_issue(id, status)
-    await ctx.send(res)
+    statusDict = await monday.get_board_status(id)
+    if not statusDict:
+        return await ctx.send("Please fetch the issues first with !issues")
+    options = list(statusDict.values())
+    multiple_choice = BotMultipleChoice(ctx, options, f"Choose a status for {id}")
+    await multiple_choice.run()
+    option = multiple_choice.choice
+    statusCode = [k for k, v in statusDict.items() if v == option][0]
+    res = monday.update_issue(id, statusCode)
+    await ctx.send(f"Updated issue {id} to {option}" if res else "Error updating issue")
+    await multiple_choice.quit()
 
 
 @bot.command(
@@ -128,13 +130,22 @@ async def groups(ctx):
     if not groups:
         return await ctx.send("No groups found")
     embed = discord.Embed(title="Groups", description="All groups", color=0x266DD3)
-    for group, index in zip(groups, range(len(groups))):
-        embed.add_field(
-            name=f"{index+1}. {group['name']}",
-            value=f"Board: {group['board_id']}\nGroup: {group['group_id']}",
-            inline=False,
-        )
-    return await ctx.send(embed=embed)
+    groups = sorted(groups, key=lambda k: k["name"])
+    groups = split_list(groups, 10)
+    embed_list = list()
+    group_count = 0
+    for group_list in groups:
+        for group in group_list:
+            group_count += 1
+            embed.add_field(
+                name=f"{group_count}. {group['name']}",
+                value=f"Board: {group['board_id']}\nGroup: {group['group_id']}",
+                inline=False,
+            )
+        embed_list.append(embed)
+        embed = discord.Embed(title="Groups", description="All groups", color=0x266DD3)
+    paginator = BotEmbedPaginator(ctx, embed_list)
+    await paginator.run()
 
 
 @bot.command(

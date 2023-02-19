@@ -69,3 +69,25 @@ def get_groups(server):
     data, _ = supabase.table("servers").select("*").eq("server_id", server).execute()
     groups = data[1]
     return groups
+
+
+async def get_issue(issue_id):
+    data, _ = supabase.table("issues").select("*").eq("issue_id", issue_id).execute()
+    issue = data[1]
+    return issue[0]
+
+
+async def board_status(board):
+    data, _ = supabase.table("servers").select("*").eq("board_id", board).execute()
+    groups = data[1][0]
+    return groups["status_list"]
+
+
+def set_board_status(board, status_list):
+    data, _ = (
+        supabase.table("servers")
+        .update({"status_list": status_list})
+        .eq("board_id", board)
+        .execute()
+    )
+    return data[1]
