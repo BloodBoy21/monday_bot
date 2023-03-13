@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  nerd_bot:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      MONDAY_TOKEN: 
+      DISCORD_TOKEN: 
+      SUPABASE_PASSWORD:
+      SUPABASE_URL:
+      SUPABASE_KEY:
+      MONDAY_HOST:
+    restart: always
